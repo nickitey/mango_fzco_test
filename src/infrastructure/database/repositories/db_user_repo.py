@@ -12,13 +12,15 @@ class DatabaseUserRepository(UserRepository):
 
     async def create(self, user: User) -> User:
         db_user = User(**vars(user))
-        self.session.add(db_user)
-        await self.session.commit()
+        async with self.session as session:
+            session.add(db_user)
+            await session.commit()
         return user
 
     async def get_by_id(self, user_id: int) -> User | None:
         query = select(UserModel).where(UserModel.id == user_id)
-        result = await self.session.execute(query)
+        async with self.session as session:
+            result = await session.execute(query)
         db_user = result.scalar_one_or_none()
         db_user_dump = vars(db_user)
         db_user_dump.pop("_sa_instance_state")

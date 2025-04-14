@@ -69,7 +69,7 @@ async def lifespan(app: FastAPI) -> t.AsyncGenerator[None, None]:
 
     logger.info("Инициализация завершена")
     yield
-    app.state.dishka_container.close()
+    await app.state.dishka_container.close()
 
 
 app = FastAPI(title="Тестовое приложение для WinDI Tech", lifespan=lifespan)

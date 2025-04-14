@@ -14,13 +14,15 @@ class DatabaseGroupRepository(GroupRepository):
 
     async def create(self, group: Group) -> Group:
         db_group = GroupModel(**vars(group))
-        self.session.add(db_group)
-        await self.session.commit()
+        async with self.session as session:
+            session.add(db_group)
+            await session.commit()
         return group
 
     async def get_by_group_id(self, group_id: int) -> Optional[Group]:
         query = select(GroupModel).where(GroupModel.id == group_id)
-        result = await self.session.execute(query)
+        async with self.session as session:
+            result = await session.execute(query)
         db_group = result.scalar_one_or_none()
         db_group_dump = vars(db_group)
         db_group_dump.pop("_sa_instance_state")
@@ -28,7 +30,8 @@ class DatabaseGroupRepository(GroupRepository):
 
     async def get_by_chat_id(self, chat_id: int) -> Optional[Group]:
         query = select(GroupModel).where(GroupModel.chat_id == chat_id)
-        result = await self.session.execute(query)
+        async with self.session as session:
+            result = await session.execute(query)
         db_group = result.scalar_one_or_none()
         db_group_dump = vars(db_group)
         db_group_dump.pop("_sa_instance_state")

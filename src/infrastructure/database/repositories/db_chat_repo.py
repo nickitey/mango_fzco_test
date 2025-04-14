@@ -14,13 +14,15 @@ class DatabaseChatRepository(ChatRepository):
 
     async def create(self, chat: Chat) -> Chat:
         db_chat = ChatModel(**vars(chat))
-        self.session.add(db_chat)
-        await self.session.commit()
+        async with self.session as session:
+            session.add(db_chat)
+            await session.commit()
         return chat
 
     async def get_by_id(self, chat_id: int) -> Optional[Chat]:
         query = select(ChatModel).where(ChatModel.id == chat_id)
-        result = await self.session.execute(query)
+        async with self.session as session:
+            result = await session.execute(query)
         db_chat = result.scalar_one_or_none()
         db_chat_dump = vars(db_chat)
         db_chat_dump.pop("_sa_instance_state")

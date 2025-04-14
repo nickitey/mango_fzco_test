@@ -12,8 +12,9 @@ class DatabaseMessageRepository(MessageRepository):
 
     async def save(self, message: Message) -> Message:
         db_message = MessageModel(**vars(message))
-        self.session.add(db_message)
-        await self.session.commit()
+        async with self.session as session:
+            session.add(db_message)
+            await session.commit()
         return message
 
     async def get_by_chat_id(
@@ -26,15 +27,17 @@ class DatabaseMessageRepository(MessageRepository):
             .limit(limit)
             .offset(offset)
         )
-        result = await self.session.execute(query)
+        async with self.session as session:
+            result = await session.execute(query)
         messages = result.scalars().all()
         return [Message(**{
-            key: value for key, value in vars(m) if key != "_sa_instance_state"
+            key: value for key, value in vars(m).items() if key != "_sa_instance_state"
         }) for m in messages]
 
     async def mark_as_read(self, message_id: int) -> None:
         query = select(MessageModel).where(MessageModel.id == message_id)
-        result = await self.session.execute(query)
+        async with self.session as session:
+            result = await session.execute(query)
         message = result.scalar_one()
         message.is_read = True
-        await self.session.commit()
+        await session.commit()
