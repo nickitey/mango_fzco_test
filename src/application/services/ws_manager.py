@@ -12,12 +12,14 @@ class WebSocketManager:
     всем
     """
 
-    def __init__(self, group_repo: GroupRepository):
+    def __init__(self):
         self.connections: dict[int, WebSocket] = {}
-        self.group_repo = group_repo
 
-    async def connect(self, user_id: int, websocket: WebSocket):
+    async def connect(
+        self, user_id: int, websocket: WebSocket, group_repo: GroupRepository
+    ):
         await websocket.accept()
+        self.group_repo = group_repo
         self.connections[user_id] = websocket
 
     async def disconnect(self, user_id: int):
