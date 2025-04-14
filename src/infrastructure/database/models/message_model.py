@@ -1,14 +1,15 @@
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.infrastructure.database.base import Base
+from src.infrastructure.database.models.base import Base
 
 
 class MessageModel(Base):
     __tablename__ = "messages"
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(primary_key=True, default_factory=uuid4)
     chat_id: Mapped[int] = mapped_column(
         ForeignKey("chats.id", ondelete="SET NULL")
     )

@@ -2,7 +2,7 @@ from sqlalchemy import Enum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.domain.entities import ChatCategory
-from src.infrastructure.database.base import Base
+from src.infrastructure.database.models.base import Base
 
 
 class ChatModel(Base):
