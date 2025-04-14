@@ -69,7 +69,11 @@ async def websocket_endpoint(
                 chat_id = data["chat_id"]
                 text = data["text"]
                 message_id = str(uuid4())
-                await send_message_use_case.execute(chat_id, user_id, text, message_id)
+                await send_message_use_case.execute(
+                    chat_id, user_id, text, message_id
+                )
         except Exception as e:
             await ws_manager.disconnect(user_id)
-            print(f"Попытка подключения пользователя {user_id} не удалась с ошибкой {e}")
+            print(
+                f"Попытка подключения пользователя {user_id} не удалась с ошибкой {e}"
+            )

@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
                                     create_async_engine)
 
 from src.application.services.ws_manager import WebSocketManager
-from src.application.usecases import SendMessageUseCase
+from src.application.usecases import (
+    SendMessageUseCase, GetChatHistoryUseCase)
 from src.config import Settings
 from src.domain.repositories import (ChatRepository, GroupRepository,
                                      MessageRepository, UserRepository)
@@ -85,3 +86,11 @@ class AppProvider(Provider):
             ws_manager=ws_manager,
             redis_client=redis_client,
         )
+
+    @provide(scope=Scope.REQUEST)
+    def get_chat_history_use_case(
+            self,
+            message_repo: MessageRepository,
+            chat_repo: ChatRepository
+    ) -> GetChatHistoryUseCase:
+        return GetChatHistoryUseCase(message_repo, chat_repo)
