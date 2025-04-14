@@ -7,6 +7,7 @@ class Group:
     name: str
     creator_id: int
     participants: list[int]
+    chat_id: int
     # Начиная с python3.9 можно использовать класс list для аннотации.
     # Источник: https://peps.python.org/pep-0585/
     # Отход от использования для аннотации typing.List НЕ является ошибкой.

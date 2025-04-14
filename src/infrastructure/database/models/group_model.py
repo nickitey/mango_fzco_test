@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey
+from sqlalchemy import ARRAY, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.infrastructure.database.models.base import Base
@@ -14,4 +14,4 @@ class GroupModel(Base):
     creator_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE")
     )
-    participants: Mapped[list[int]] = mapped_column(nullable=False)
+    participants: Mapped[list[int]] = mapped_column(ARRAY(Integer), nullable=False)

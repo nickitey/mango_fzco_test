@@ -22,10 +22,14 @@ class DatabaseGroupRepository(GroupRepository):
         query = select(GroupModel).where(GroupModel.id == group_id)
         result = await self.session.execute(query)
         db_group = result.scalar_one_or_none()
-        return Group(**vars(db_group)) if db_group else None
+        db_group_dump = vars(db_group)
+        db_group_dump.pop("_sa_instance_state")
+        return Group(**db_group_dump) if db_group else None
 
     async def get_by_chat_id(self, chat_id: int) -> Optional[Group]:
         query = select(GroupModel).where(GroupModel.chat_id == chat_id)
         result = await self.session.execute(query)
         db_group = result.scalar_one_or_none()
-        return Group(**vars(db_group)) if db_group else None
+        db_group_dump = vars(db_group)
+        db_group_dump.pop("_sa_instance_state")
+        return Group(**db_group_dump) if db_group else None

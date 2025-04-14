@@ -6,4 +6,4 @@ class User:
     id: int
     name: str
     email: str
-    hashed_password: str
+    password_hash: str

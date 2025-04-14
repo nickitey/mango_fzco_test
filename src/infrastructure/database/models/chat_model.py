@@ -10,6 +10,6 @@ class ChatModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(nullable=False)
-    type: Mapped[ChatCategory] = mapped_column(
+    category: Mapped[ChatCategory] = mapped_column(
         Enum(ChatCategory), nullable=False
     )

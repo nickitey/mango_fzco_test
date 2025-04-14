@@ -22,4 +22,6 @@ class DatabaseChatRepository(ChatRepository):
         query = select(ChatModel).where(ChatModel.id == chat_id)
         result = await self.session.execute(query)
         db_chat = result.scalar_one_or_none()
-        return Chat(**vars(db_chat)) if db_chat else None
+        db_chat_dump = vars(db_chat)
+        db_chat_dump.pop("_sa_instance_state")
+        return Chat(**db_chat_dump) if db_chat else None

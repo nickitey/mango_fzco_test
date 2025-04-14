@@ -20,4 +20,6 @@ class DatabaseUserRepository(UserRepository):
         query = select(UserModel).where(UserModel.id == user_id)
         result = await self.session.execute(query)
         db_user = result.scalar_one_or_none()
-        return User(**vars(db_user)) if db_user else None
+        db_user_dump = vars(db_user)
+        db_user_dump.pop("_sa_instance_state")
+        return User(**db_user_dump) if db_user else None
