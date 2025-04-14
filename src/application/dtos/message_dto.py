@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 @dataclass
-class Message:
+class MessageDTO:
     id: str
     chat_id: int
     sender_id: int

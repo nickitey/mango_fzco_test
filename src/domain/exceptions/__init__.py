@@ -1,3 +1,9 @@
-from exceptions import GroupException
+from exceptions import (ChatNotFoundException, DuplicateMessageException,
+                        GroupNotFoundException, UserNotFoundException)
 
-__all__ = ("GroupException",)
+__all__ = (
+    "GroupNotFoundException",
+    "DuplicateMessageException",
+    "UserNotFoundException",
+    "ChatNotFoundException",
+)
