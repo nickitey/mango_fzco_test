@@ -17,3 +17,7 @@ class ChatRepository(ABC):
     @abstractmethod
     async def create(self, chat: Chat) -> Chat:
         pass
+
+    @abstractmethod
+    async def get_chat_participants(self, chat_id: int):
+        pass

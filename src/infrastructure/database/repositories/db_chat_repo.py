@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domain.entities import Chat
+from src.domain.entities import Chat, User
 from src.domain.repositories import ChatRepository
 from src.infrastructure.database.models import ChatModel
 
@@ -27,3 +27,13 @@ class DatabaseChatRepository(ChatRepository):
         db_chat_dump = vars(db_chat)
         db_chat_dump.pop("_sa_instance_state")
         return Chat(**db_chat_dump)
+
+    async def get_chat_participants(self, chat_id: int) -> list[User | None]:
+        query = select(ChatModel).where(ChatModel.id == chat_id)
+        async with self.session as session:
+            result = await session.execute(query)
+        messages = result.scalars().all()
+        return [User(**{
+            key: value for key, value in vars(m).items()
+            if key != "_sa_instance_state"
+        }) for m in messages]

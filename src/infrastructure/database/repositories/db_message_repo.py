@@ -18,10 +18,7 @@ class DatabaseMessageRepository(MessageRepository):
         return message
 
     async def get_by_id(self, message_id: str) -> Message | None:
-        query = (
-            select(MessageModel)
-            .where(MessageModel.id == message_id)
-        )
+        query = select(MessageModel).where(MessageModel.id == message_id)
         async with self.session as session:
             result = await session.execute(query)
         message = result.scalar_one_or_none()
@@ -30,7 +27,6 @@ class DatabaseMessageRepository(MessageRepository):
         message_dump = vars(message)
         message_dump.pop("_sa_instance_state")
         return Message(**message_dump)
-
 
     async def get_by_chat_id(
         self, chat_id: int, limit: int, offset: int
@@ -46,7 +42,8 @@ class DatabaseMessageRepository(MessageRepository):
             result = await session.execute(query)
         messages = result.scalars().all()
         return [Message(**{
-            key: value for key, value in vars(m).items() if key != "_sa_instance_state"
+            key: value for key, value in vars(m).items()
+            if key != "_sa_instance_state"
         }) for m in messages]
 
     async def mark_as_read(self, message_id: int) -> None:

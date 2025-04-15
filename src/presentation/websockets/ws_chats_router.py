@@ -5,14 +5,16 @@ from starlette import status
 
 from src.application.services import WebSocketManager
 from src.application.usecases import SendMessageUseCase
-from src.domain.repositories import GroupRepository, MessageRepository
+from src.domain.repositories import (ChatRepository, GroupRepository,
+                                     MessageRepository)
 
 router = APIRouter()
 
 
-@router.websocket("/ws/{user_id}")
+@router.websocket("/ws/{chat_id}/{user_id}")
 async def websocket_endpoint(
     websocket: WebSocket,
+    chat_id: int,
     user_id: int,
 ):
     """
@@ -20,7 +22,7 @@ async def websocket_endpoint(
     в документации в принципе посвящен один короткий абзац, из которого следует,
     что зависимости с контекстом (scope) REQUEST (на уровне запроса)
     здесь работают как-то так себе.
-    О чем автор умолчал - о том, что все зависимости здесь работают как-то так
+    О чем автор умолчал - о том, что *все* зависимости здесь работают как-то так
     себе в силу длительности соединения вебсокета. Поэтому целым приключением
     оказалось сделать один менеджер вебсокетов для нескольких соединений,
     так, чтобы несколько пользователей могли подключаться и общаться между
@@ -61,9 +63,10 @@ async def websocket_endpoint(
     container = websocket.app.state.dishka_container
     async with container() as request_container:
         ws_manager = await request_container.get(WebSocketManager)
-        send_message_use_case = await request_container.get(SendMessageUseCase)
+        send_message_usecase = await request_container.get(SendMessageUseCase)
         group_repo = await request_container.get(GroupRepository)
         message_repo = await request_container.get(MessageRepository)
+        chat_repo = await request_container.get(ChatRepository)
         try:
             await ws_manager.connect(user_id, websocket, group_repo)
             while True:
@@ -71,21 +74,28 @@ async def websocket_endpoint(
                 message_type = data.get("type", "message")
 
                 if message_type == "message":
-                    chat_id = data["chat_id"]
                     text = data["text"]
                     message_id = str(uuid4())
-                    await send_message_use_case.execute(chat_id, user_id, text, message_id)
+                    await send_message_usecase.execute(
+                        chat_id, user_id, text, message_id
+                    )
+
                 elif message_type == "read":
                     message_id = data["message_id"]
                     all_read = await ws_manager.confirm_read(
-                        message_id, user_id, group_repo, message_repo
+                        message_id,
+                        chat_id,
+                        user_id,
+                        group_repo,
+                        chat_repo,
+                        message_repo,
                     )
                     if all_read:
                         await message_repo.mark_as_read(message_id)
                 else:
                     await websocket.close(
                         code=status.WS_1003_UNSUPPORTED_DATA,
-                        reason="Неподдерживаемый формат сообщения"
+                        reason="Неподдерживаемый формат сообщения",
                     )
         except Exception as e:
             await ws_manager.disconnect(user_id)
