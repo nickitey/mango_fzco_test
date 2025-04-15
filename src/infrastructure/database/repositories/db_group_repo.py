@@ -24,15 +24,19 @@ class DatabaseGroupRepository(GroupRepository):
         async with self.session as session:
             result = await session.execute(query)
         db_group = result.scalar_one_or_none()
+        if db_group is None:
+            return None
         db_group_dump = vars(db_group)
         db_group_dump.pop("_sa_instance_state")
-        return Group(**db_group_dump) if db_group else None
+        return Group(**db_group_dump)
 
     async def get_by_chat_id(self, chat_id: int) -> Optional[Group]:
         query = select(GroupModel).where(GroupModel.chat_id == chat_id)
         async with self.session as session:
             result = await session.execute(query)
         db_group = result.scalar_one_or_none()
+        if db_group is None:
+            return None
         db_group_dump = vars(db_group)
         db_group_dump.pop("_sa_instance_state")
-        return Group(**db_group_dump) if db_group else None
+        return Group(**db_group_dump)

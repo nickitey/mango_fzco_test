@@ -17,6 +17,21 @@ class DatabaseMessageRepository(MessageRepository):
             await session.commit()
         return message
 
+    async def get_by_id(self, message_id: str) -> Message | None:
+        query = (
+            select(MessageModel)
+            .where(MessageModel.id == message_id)
+        )
+        async with self.session as session:
+            result = await session.execute(query)
+        message = result.scalar_one_or_none()
+        if message is None:
+            return None
+        message_dump = vars(message)
+        message_dump.pop("_sa_instance_state")
+        return Message(**message_dump)
+
+
     async def get_by_chat_id(
         self, chat_id: int, limit: int, offset: int
     ) -> list[Message]:
@@ -38,6 +53,6 @@ class DatabaseMessageRepository(MessageRepository):
         query = select(MessageModel).where(MessageModel.id == message_id)
         async with self.session as session:
             result = await session.execute(query)
-        message = result.scalar_one()
-        message.is_read = True
-        await session.commit()
+            message = result.scalar_one()
+            message.is_read = True
+            await session.commit()

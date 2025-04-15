@@ -20,7 +20,11 @@ class MessageRepository(ABC):
         pass
 
     @abstractmethod
-    async def mark_as_read(self, message_id: int) -> None:
+    async def mark_as_read(self, message_id: str) -> None:
+        pass
+
+    @abstractmethod
+    async def get_by_id(self, message_id: str) -> Message | None:
         pass
 
     @abstractmethod

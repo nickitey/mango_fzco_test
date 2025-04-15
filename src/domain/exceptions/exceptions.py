@@ -16,3 +16,7 @@ class UserNotFoundException(DomainException):
 
 class ChatNotFoundException(DomainException):
     pass
+
+
+class MessageNotFoundException(DomainException):
+    pass

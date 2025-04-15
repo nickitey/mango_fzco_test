@@ -22,6 +22,8 @@ class DatabaseUserRepository(UserRepository):
         async with self.session as session:
             result = await session.execute(query)
         db_user = result.scalar_one_or_none()
+        if db_user is None:
+            return None
         db_user_dump = vars(db_user)
         db_user_dump.pop("_sa_instance_state")
-        return User(**db_user_dump) if db_user else None
+        return User(**db_user_dump)

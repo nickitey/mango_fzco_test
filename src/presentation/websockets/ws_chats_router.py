@@ -1,10 +1,11 @@
 from uuid import uuid4
 
 from fastapi import APIRouter, WebSocket
+from starlette import status
 
 from src.application.services import WebSocketManager
 from src.application.usecases import SendMessageUseCase
-from src.domain.repositories import GroupRepository
+from src.domain.repositories import GroupRepository, MessageRepository
 
 router = APIRouter()
 
@@ -62,16 +63,30 @@ async def websocket_endpoint(
         ws_manager = await request_container.get(WebSocketManager)
         send_message_use_case = await request_container.get(SendMessageUseCase)
         group_repo = await request_container.get(GroupRepository)
+        message_repo = await request_container.get(MessageRepository)
         try:
             await ws_manager.connect(user_id, websocket, group_repo)
             while True:
                 data = await websocket.receive_json()
-                chat_id = data["chat_id"]
-                text = data["text"]
-                message_id = str(uuid4())
-                await send_message_use_case.execute(
-                    chat_id, user_id, text, message_id
-                )
+                message_type = data.get("type", "message")
+
+                if message_type == "message":
+                    chat_id = data["chat_id"]
+                    text = data["text"]
+                    message_id = str(uuid4())
+                    await send_message_use_case.execute(chat_id, user_id, text, message_id)
+                elif message_type == "read":
+                    message_id = data["message_id"]
+                    all_read = await ws_manager.confirm_read(
+                        message_id, user_id, group_repo, message_repo
+                    )
+                    if all_read:
+                        await message_repo.mark_as_read(message_id)
+                else:
+                    await websocket.close(
+                        code=status.WS_1003_UNSUPPORTED_DATA,
+                        reason="Неподдерживаемый формат сообщения"
+                    )
         except Exception as e:
             await ws_manager.disconnect(user_id)
             print(
