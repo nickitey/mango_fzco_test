@@ -4,7 +4,9 @@ from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
                                     create_async_engine)
 
 from src.application.services.ws_manager import WebSocketManager
-from src.application.usecases import GetChatHistoryUseCase, SendMessageUseCase
+from src.application.usecases import (CreateChatUseCase, CreateGroupUseCase,
+                                      CreateUserUseCase, GetChatHistoryUseCase,
+                                      SendMessageUseCase)
 from src.config import Settings
 from src.domain.repositories import (ChatRepository, GroupRepository,
                                      MessageRepository, UserRepository)
@@ -84,3 +86,21 @@ class AppProvider(Provider):
         self, message_repo: MessageRepository, chat_repo: ChatRepository
     ) -> GetChatHistoryUseCase:
         return GetChatHistoryUseCase(message_repo, chat_repo)
+
+    @provide(scope=Scope.REQUEST)
+    def get_create_user_usecase(
+        self, session_maker: async_sessionmaker[AsyncSession]
+    ) -> CreateUserUseCase:
+        return CreateUserUseCase(session_maker())
+
+    @provide(scope=Scope.REQUEST)
+    def get_create_chat_usecase(
+        self, session_maker: async_sessionmaker[AsyncSession]
+    ) -> CreateChatUseCase:
+        return CreateChatUseCase(session_maker())
+
+    @provide(scope=Scope.REQUEST)
+    def get_create_group_usecase(
+        self, session_maker: async_sessionmaker[AsyncSession]
+    ) -> CreateGroupUseCase:
+        return CreateGroupUseCase(session_maker())
