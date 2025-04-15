@@ -9,7 +9,9 @@ from src.infrastructure.database.models.base import Base
 
 class MessageModel(Base):
     __tablename__ = "messages"
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid4
+    )
     chat_id: Mapped[int] = mapped_column(
         ForeignKey("chats.id", ondelete="SET NULL")
     )
