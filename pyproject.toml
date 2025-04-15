@@ -12,6 +12,7 @@ sqlalchemy = {extras = ["all"], version = "^2.0.40"}
 psycopg = "^3.2.6"
 dishka = "^1.5.3"
 redis = "^5.2.1"
+alembic = "^1.15.2"
 
 
 [tool.poetry.group.dev.dependencies]

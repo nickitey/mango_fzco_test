@@ -23,14 +23,7 @@ async def lifespan(app: FastAPI) -> t.AsyncGenerator[None, None]:
     logger.info("Инициализация базы данных")
 
     # Создаем движок и сессию
-    db_url = "postgresql+psycopg://{}:{}@{}:{}/{}".format(
-        settings.database.POSTGRES_USER,
-        settings.database.POSTGRES_PASSWORD,
-        settings.database.POSTGRES_HOST,
-        settings.database.POSTGRES_EXT_PORT,
-        settings.database.POSTGRES_DB,
-    )
-    engine = create_async_engine(db_url, echo=False)
+    engine = create_async_engine(settings.database.DB_URL, echo=False)
     async_session = async_sessionmaker(engine, expire_on_commit=False)
 
     # Создаем таблицы

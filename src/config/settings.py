@@ -12,6 +12,16 @@ class DatabaseSettings(BaseModel):
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
 
+    @property
+    def DB_URL(self):
+        return "postgresql+psycopg://{}:{}@{}:{}/{}".format(
+            self.POSTGRES_USER,
+            self.POSTGRES_PASSWORD,
+            self.POSTGRES_HOST,
+            self.POSTGRES_EXT_PORT,
+            self.POSTGRES_DB,
+        )
+
 
 class RedisSettings(BaseModel):
     REDIS_HOST: str
@@ -21,7 +31,9 @@ class RedisSettings(BaseModel):
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_nested_delimiter="__", env_file=".env")
+    model_config = SettingsConfigDict(
+        env_nested_delimiter="__", env_file=".env"
+    )
 
     database: DatabaseSettings
     redis: RedisSettings

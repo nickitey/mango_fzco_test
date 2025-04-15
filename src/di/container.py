@@ -23,14 +23,7 @@ class AppProvider(Provider):
     async def get_db_session(
         self, settings: Settings
     ) -> async_sessionmaker[AsyncSession]:
-        db_url = "postgresql+psycopg://{}:{}@{}:{}/{}".format(
-            settings.database.POSTGRES_USER,
-            settings.database.POSTGRES_PASSWORD,
-            settings.database.POSTGRES_HOST,
-            settings.database.POSTGRES_EXT_PORT,
-            settings.database.POSTGRES_DB,
-        )
-        engine = create_async_engine(db_url)
+        engine = create_async_engine(settings.database.DB_URL)
         return async_sessionmaker(engine, expire_on_commit=False)
 
     @provide(scope=Scope.SESSION)
