@@ -90,7 +90,7 @@ async def websocket_endpoint(
                         chat_repo,
                         message_repo,
                     )
-                    if all_read:
+                    if all_read is True:
                         await message_repo.mark_as_read(message_id)
                 else:
                     await websocket.close(

@@ -2,6 +2,7 @@ from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.domain.entities import Group
 from src.domain.repositories import GroupRepository
@@ -31,12 +32,12 @@ class DatabaseGroupRepository(GroupRepository):
         return Group(**db_group_dump)
 
     async def get_by_chat_id(self, chat_id: int) -> Optional[Group]:
-        query = select(GroupModel).where(GroupModel.chat_id == chat_id)
+        query = select(GroupModel).where(GroupModel.chat_id == chat_id).options(
+            selectinload(GroupModel.participants)
+        )
         async with self.session as session:
             result = await session.execute(query)
         db_group = result.scalar_one_or_none()
         if db_group is None:
             return None
-        db_group_dump = vars(db_group)
-        db_group_dump.pop("_sa_instance_state")
-        return Group(**db_group_dump)
+        return Group(**db_group.to_dict())

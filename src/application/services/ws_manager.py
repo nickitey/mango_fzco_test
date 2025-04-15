@@ -42,13 +42,13 @@ class WebSocketManager:
             )
 
     async def broadcast(self, message: Message, chat_id: int):
-        group = await self.group_repo.get_by_group_id(chat_id)
+        group = await self.group_repo.get_by_chat_id(chat_id)
         if not group:
             raise GroupNotFoundException(f"Группа с {chat_id} не существует.")
 
-        for user_id in group.participants:
-            if user_id in self.connections:
-                await self.connections[user_id].send_json(
+        for user in group.participants:
+            if user.id in self.connections and user.id != message.sender_id:
+                await self.connections[user.id].send_json(
                     {
                         "id": message.id,
                         "chat_id": message.chat_id,
@@ -104,18 +104,56 @@ class WebSocketManager:
                 f"Сообщение {message_id} не найдено"
             )
 
-        group = await group_repo.get_by_group_id(message.chat_id)
+        group = await group_repo.get_by_chat_id(message.chat_id)
         if not group:
             raise GroupNotFoundException(
                 f"Группа для chat_id={message.chat_id} не найдена"
             )
 
         # Проверяем, все ли участники (кроме отправителя) прочитали
-        participants_except_sender = set(group.participants) - {
+        participants_except_sender = set((user.id for user in group.participants)) - {
             message.sender_id
         }
-        read_by = self.read_confirmations[message_id]
-        all_read = participants_except_sender.issubset(read_by)
+        read_by = self.read_confirmations.get(message_id)
+        if read_by is None:
+            """
+            Я тут столкнулся с некоторым race condition.
+            Ситуация: все клиенты прочитали сообщение и прислали об этом
+            уведомления.
+            Логика в сокете универсальна: пришло подтверждение - вызови этот
+            метод. Но что, если один клиент прислал отчет, запустил выполнение
+            подтверждения о прочтении, и код дошел до 
+            del self.read_confirmations[message_id],
+            то есть все, нет в self.read_confirmations больше такого ключа -
+            uuid сообщения, но в это же время другой клиент тоже прислал отчет
+            о доставке, и этот метод тоже вызван и выполняется?
+            Получается, что пока вызванный один раз метод уже все выполнил
+            и удалил ключ из словаря, второй в этот момент еще выполняется
+            и доходит до строки, где он проверяет по ключу, кто прочитал
+            сообщение. Возникает KeyError, все падает.
+            Поэтому мы просто аккуратно пытаемся получить из словаря множество
+            прочитавших, и если оно на момент запроса уже None, то аккуратно
+            выходим из функции.
+            Важно, что мы здесь застрахованы от ошибки, что сообщение еще просто
+            никто не прочитал: в самом начале выполнения метода, если ключа
+            с uuid сообщения нет в словаре, этот ключ добавится со значением -
+            пустым множеством.
+            То есть, ситуация "гонки" возникла в тот момент, когда сообщение
+            было во временном состоянии, когда код дублирующего метода начинал
+            выполняться, но в процессе его выполнения словарь read_confirmations
+            изменился, потеряв нужный ключ.
+            Для чисто символического разделения логики
+            мы определяем так:
+            - если метод вернул True - обновить сообщению статус на "Прочитано";
+            - если метод вернул False - не обновлять статус сообщения, еще
+            не все прочитали сообщение;
+            - если метод вернул None - тогда просто ничего не делай.
+            Да, фактически два последних пункта - одно и то же по смыслу.
+            Но есть отличия в семантике.
+            """
+            return None
+
+        all_read = participants_except_sender == read_by
 
         if all_read:
             # Очищаем временное состояние
