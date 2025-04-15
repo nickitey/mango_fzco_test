@@ -50,7 +50,7 @@ class SendMessageUseCase:
             raise DuplicateMessageException("Данное сообщение уже обработано")
 
         participants = await self.chat_repo.get_chat_participants(chat_id)
-        receiver_id = next(u for u in participants if u != sender_id)
+        receiver_id = next(u.id for u in participants if u.id != sender_id)
 
         message = Message(
             id=message_id,

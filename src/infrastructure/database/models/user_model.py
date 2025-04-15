@@ -12,8 +12,8 @@ class UserModel(Base):
     password_hash: Mapped[str] = mapped_column(nullable=False)
 
     chats: Mapped[list["ChatModel"]] = relationship(
-        back_populates="user", secondary="chats_users"
+        back_populates="participants", secondary="chats_users"
     )
     groups: Mapped[list["GroupModel"]] = relationship(
-        back_populates="user", secondary="groups_users"
+        back_populates="participants", secondary="groups_users"
     )

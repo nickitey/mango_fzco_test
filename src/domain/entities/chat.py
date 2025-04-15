@@ -12,4 +12,3 @@ class Chat:
     id: int
     name: str
     category: ChatCategory
-    participants: list[int]

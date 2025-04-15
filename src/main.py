@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from src.config import Settings
 from src.di import create_container
+from src.domain.entities import ChatCategory
 from src.infrastructure.database.models import ChatModel, GroupModel, UserModel
 from src.infrastructure.database.models.base import Base
 from src.presentation.api import router as api_router
@@ -35,25 +36,42 @@ async def lifespan(app: FastAPI) -> t.AsyncGenerator[None, None]:
     async with async_session() as session:
         async with session.begin():
             # Проверяем, есть ли пользователи
-            result = await session.execute(select(UserModel).where(UserModel.id.in_([1, 2])))
+            result = await session.execute(select(UserModel).where(UserModel.id.in_([1, 2, 3])))
             users = result.scalars().all()
 
             if not users:
                 logger.warning("Добавление тестовых пользователей")
                 await session.execute(insert(UserModel).values([
                     {"id": 1, "name": "User1", "email": "user1@example.com", "password_hash": "hash1"},
-                    {"id": 2, "name": "User2", "email": "user2@example.com", "password_hash": "hash2"}
+                    {"id": 2, "name": "User2", "email": "user2@example.com", "password_hash": "hash2"},
+                    {"id": 3, "name": "User3", "email": "user3@example.com", "password_hash": "hash3"},
                 ]))
 
-                # Добавляем тестовый чат
-                await session.execute(insert(ChatModel).values([
-                    {"id": 1, "name": "Test Chat", "category": "PRIVATE"}
-                ]))
+                user1 = await session.get(UserModel, 1)
+                user2 = await session.get(UserModel, 2)
+                user3 = await session.get(UserModel, 3)
+
+                # Добавляем тестовые чаты, приватный и публичный
+                session.add(
+                    ChatModel(
+                        id=1, name="Test Chat1", category=ChatCategory.PRIVATE,
+                        participants=[user1, user2]
+                    )
+                )
+                session.add(
+                    ChatModel(
+                        id=2, name="Test Chat2", category=ChatCategory.PUBLIC,
+                        participants=[user1, user2, user3]
+                    )
+                )
 
                 # Добавляем тестовую группу
-                await session.execute(insert(GroupModel).values([
-                    {"id": 1, "chat_id": 1, "name": "Test Group", "creator_id": 1, "participants": [1, 2]}
-                ]))
+                session.add(
+                    GroupModel(
+                        id=1, chat_id=2, name="Test Group", creator=1,
+                        participants=[user1, user2, user3]
+                    )
+                )
 
                 await session.commit()
                 logger.info("Тестовые данные добавлены")

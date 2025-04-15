@@ -11,7 +11,7 @@ class GroupModel(Base):
         ForeignKey("chats.id", ondelete="CASCADE")
     )
     name: Mapped[str] = mapped_column(nullable=False)
-    creator_id: Mapped[int] = mapped_column(
+    creator: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE")
     )
     participants: Mapped[list["UserModel"]] = relationship(

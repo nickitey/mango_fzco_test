@@ -1,5 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.domain.entities import Chat, User
 from src.domain.repositories import ChatRepository
@@ -29,11 +30,11 @@ class DatabaseChatRepository(ChatRepository):
         return Chat(**db_chat_dump)
 
     async def get_chat_participants(self, chat_id: int) -> list[User | None]:
-        query = select(ChatModel).where(ChatModel.id == chat_id)
+        query = select(ChatModel).where(ChatModel.id == chat_id).options(selectinload(ChatModel.participants))
         async with self.session as session:
             result = await session.execute(query)
-        messages = result.scalars().all()
+        chat = result.scalars().one()
         return [User(**{
-            key: value for key, value in vars(m).items()
+            key: value for key, value in vars(user).items()
             if key != "_sa_instance_state"
-        }) for m in messages]
+        }) for user in chat.participants]
