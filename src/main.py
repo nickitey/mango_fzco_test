@@ -12,7 +12,7 @@ from src.di import create_container
 from src.domain.entities import ChatCategory
 from src.infrastructure.database.models import ChatModel, GroupModel, UserModel
 from src.infrastructure.database.models.base import Base
-from src.presentation.api import router as api_router
+from src.presentation.api import hist_router, crud_router
 from src.presentation.websockets import router as ws_router
 
 logger = logging.getLogger()
@@ -83,11 +83,16 @@ async def lifespan(app: FastAPI) -> t.AsyncGenerator[None, None]:
     await app.state.dishka_container.close()
 
 
-app = FastAPI(title="Тестовое приложение для WinDI Tech", lifespan=lifespan)
+app = FastAPI(
+    title="Тестовое приложение для WinDI Tech",
+    description="Приложение, реализующее чат на вебсокетах с историей сообщений",
+    lifespan=lifespan
+)
 
 container = create_container()
 setup_dishka(container, app)
 
 
 app.include_router(ws_router)
-app.include_router(api_router)
+app.include_router(hist_router)
+app.include_router(crud_router)
