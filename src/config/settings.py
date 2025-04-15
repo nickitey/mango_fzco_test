@@ -7,7 +7,7 @@ class AppConfig(BaseModel): ...
 
 class DatabaseSettings(BaseModel):
     POSTGRES_HOST: str
-    POSTGRES_PORT: int
+    POSTGRES_EXT_PORT: int
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
@@ -25,7 +25,7 @@ class DatabaseSettings(BaseModel):
 
 class RedisSettings(BaseModel):
     REDIS_HOST: str
-    REDIS_PORT: int
+    REDIS_EXT_PORT: int
     REDIS_USER: str
     REDIS_PASSWORD: str
 

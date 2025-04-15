@@ -13,6 +13,7 @@ psycopg = "^3.2.6"
 dishka = "^1.5.3"
 redis = "^5.2.1"
 alembic = "^1.15.2"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 
 
 [tool.poetry.group.dev.dependencies]
