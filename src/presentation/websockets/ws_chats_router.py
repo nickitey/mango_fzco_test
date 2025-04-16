@@ -1,7 +1,6 @@
 from uuid import uuid4
 
-from fastapi import APIRouter, WebSocket, status
-from fastapi import WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
 
 from src.application.services import WebSocketManager
 from src.application.usecases import SendMessageUseCase

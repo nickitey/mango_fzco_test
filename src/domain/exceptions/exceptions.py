@@ -31,9 +31,17 @@ class UserNotFoundException(DomainException):
     pass
 
 
+class UserNotUniqueException(DomainException):
+    pass
+
+
 class ChatNotFoundException(DomainException):
     pass
 
 
 class MessageNotFoundException(DomainException):
+    pass
+
+
+class TooMuchUsersForPrivateChatException(DomainException):
     pass
