@@ -26,9 +26,11 @@ class WebSocketManager:
         await websocket.accept()
         self.group_repo = group_repo
         self.connections[user_id] = websocket
+        self._logger.info(f"Пользователь {user_id} подключился")
 
     async def disconnect(self, user_id: int):
         self.connections.pop(user_id, None)
+        self._logger.info(f"Пользователь {user_id} отключился")
 
     async def send_private_message(self, message: Message, receiver_id: int):
         if receiver_id in self.connections:

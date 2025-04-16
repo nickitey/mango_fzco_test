@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 from fastapi import APIRouter, WebSocket, status
-from fastapi.exceptions import WebSocketException
+from fastapi import WebSocketDisconnect
 
 from src.application.services import WebSocketManager
 from src.application.usecases import SendMessageUseCase
@@ -100,12 +100,12 @@ async def websocket_endpoint(
                     code=status.WS_1003_UNSUPPORTED_DATA,
                     reason="Неподдерживаемый формат сообщения",
                 )
+    except WebSocketDisconnect:
+        logger.info(f"Клиент с user_id {user_id} покинул чат")
     except Exception as e:
-        await ws_manager.disconnect(user_id)
         logger.exception(
             f"Соединение с пользователем с user_id {user_id} прервалось "
             f"с ошибкой {e}"
         )
-        raise WebSocketException(
-            code=status.WS_1014_BAD_GATEWAY, reason=str(e)
-        ) from e
+    finally:
+        await ws_manager.disconnect(user_id)

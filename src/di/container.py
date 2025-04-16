@@ -59,7 +59,7 @@ class AppProvider(Provider):
     def get_redis_client(self, settings: Settings) -> redis.Redis:
         return redis.Redis(
             host=settings.redis.REDIS_HOST,
-            port=settings.redis.REDIS_EXT_PORT,
+            port=settings.redis.REDIS_PORT,
             username=settings.redis.REDIS_USER,
             password=settings.redis.REDIS_PASSWORD,
         )
