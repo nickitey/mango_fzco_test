@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import redis.asyncio as redis
 
 from src.application.services import WebSocketManager
+from src.config import LoggerConfigurator
 from src.domain.entities import ChatCategory, Message
 from src.domain.exceptions import (ChatNotFoundException,
                                    DuplicateMessageException)
@@ -17,20 +18,23 @@ class SendMessageUseCase:
         chat_repo: ChatRepository,
         user_repo: UserRepository,
         ws_manager: WebSocketManager,
-        redis_client: redis.Redis,
+        redis_client: redis.Redis
     ):
         self.message_repo = message_repo
         self.chat_repo = chat_repo
         self.user_repo = user_repo
         self.ws_manager = ws_manager
         self.redis_client = redis_client
+        self._logger = LoggerConfigurator().get_logger(utc=True)
 
     async def execute(
         self, chat_id: int, sender_id: int, text: str, message_id: str
     ):
         chat = await self.chat_repo.get_by_id(chat_id)
         if not chat:
-            raise ChatNotFoundException("Запрошенный чат не существует")
+            err_msg = "Запрошенный чат не существует"
+            self._logger.exception(err_msg)
+            raise ChatNotFoundException(err_msg)
 
         if chat.category == ChatCategory.PRIVATE:
             return await self._handle_private_message(
@@ -47,7 +51,9 @@ class SendMessageUseCase:
         # Проверка дублирования
         cache_msg_key = f"public_msg:{message_id}"
         if await self.redis_client.get(cache_msg_key):
-            raise DuplicateMessageException("Данное сообщение уже обработано")
+            err_msg = "Данное сообщение уже обработано"
+            self._logger.exception(err_msg)
+            raise DuplicateMessageException(err_msg)
 
         participants = await self.chat_repo.get_chat_participants(chat_id)
         receiver_id = next(u.id for u in participants if u.id != sender_id)
@@ -72,14 +78,10 @@ class SendMessageUseCase:
     ):
         cache_msg_key = f"public_msg:{message_id}"
         if await self.redis_client.get(cache_msg_key):
-            raise DuplicateMessageException("Данное сообщение уже обработано")
+            err_msg = "Данное сообщение уже обработано"
+            self._logger.exception(err_msg)
+            raise DuplicateMessageException(err_msg)
 
-        # Проверка существования чата и отправителя
-        chat = await self.chat_repo.get_by_id(chat_id)
-        if not chat:
-            raise ChatNotFoundException("Запрошенный чат не существует")
-
-        # Создание и сохранение сообщения
         message = Message(
             id=message_id,
             chat_id=chat_id,

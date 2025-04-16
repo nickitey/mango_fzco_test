@@ -1,10 +1,11 @@
 from uuid import uuid4
 
-from fastapi import APIRouter, WebSocket
-from starlette import status
+from fastapi import APIRouter, WebSocket, status
+from fastapi.exceptions import WebSocketException
 
 from src.application.services import WebSocketManager
 from src.application.usecases import SendMessageUseCase
+from src.config import LoggerConfigurator
 from src.domain.repositories import (ChatRepository, GroupRepository,
                                      MessageRepository)
 
@@ -67,38 +68,44 @@ async def websocket_endpoint(
         group_repo = await request_container.get(GroupRepository)
         message_repo = await request_container.get(MessageRepository)
         chat_repo = await request_container.get(ChatRepository)
-        try:
-            await ws_manager.connect(user_id, websocket, group_repo)
-            while True:
-                data = await websocket.receive_json()
-                message_type = data.get("type", "message")
 
-                if message_type == "message":
-                    text = data["text"]
-                    message_id = str(uuid4())
-                    await send_message_usecase.execute(
-                        chat_id, user_id, text, message_id
-                    )
+    logger = LoggerConfigurator().get_logger(utc=True)
+    try:
+        await ws_manager.connect(user_id, websocket, group_repo)
+        while True:
+            data = await websocket.receive_json()
+            message_type = data.get("type", "message")
 
-                elif message_type == "read":
-                    message_id = data["message_id"]
-                    all_read = await ws_manager.confirm_read(
-                        message_id,
-                        chat_id,
-                        user_id,
-                        group_repo,
-                        chat_repo,
-                        message_repo,
-                    )
-                    if all_read is True:
-                        await message_repo.mark_as_read(message_id)
-                else:
-                    await websocket.close(
-                        code=status.WS_1003_UNSUPPORTED_DATA,
-                        reason="Неподдерживаемый формат сообщения",
-                    )
-        except Exception as e:
-            await ws_manager.disconnect(user_id)
-            print(
-                f"Попытка подключения пользователя {user_id} не удалась с ошибкой {e}"
-            )
+            if message_type == "message":
+                text = data["text"]
+                message_id = str(uuid4())
+                await send_message_usecase.execute(
+                    chat_id, user_id, text, message_id
+                )
+
+            elif message_type == "read":
+                message_id = data["message_id"]
+                all_read = await ws_manager.confirm_read(
+                    message_id,
+                    chat_id,
+                    user_id,
+                    group_repo,
+                    chat_repo,
+                    message_repo,
+                )
+                if all_read is True:
+                    await message_repo.mark_as_read(message_id)
+            else:
+                await websocket.close(
+                    code=status.WS_1003_UNSUPPORTED_DATA,
+                    reason="Неподдерживаемый формат сообщения",
+                )
+    except Exception as e:
+        await ws_manager.disconnect(user_id)
+        logger.exception(
+            f"Соединение с пользователем с user_id {user_id} прервалось "
+            f"с ошибкой {e}"
+        )
+        raise WebSocketException(
+            code=status.WS_1014_BAD_GATEWAY, reason=str(e)
+        ) from e

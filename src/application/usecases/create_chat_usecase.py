@@ -1,6 +1,7 @@
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.config import LoggerConfigurator
 from src.domain.entities import ChatCategory
 from src.domain.exceptions import UserNotFoundException
 from src.infrastructure.database.models import ChatModel, ChatsUsers, UserModel
@@ -9,6 +10,7 @@ from src.infrastructure.database.models import ChatModel, ChatsUsers, UserModel
 class CreateChatUseCase:
     def __init__(self, session: AsyncSession):
         self.session = session
+        self._logger = LoggerConfigurator().get_logger(utc=True)
 
     async def _validate_users(self, participant_ids: list[int]):
         query = select(UserModel).where(UserModel.id.in_(participant_ids))
@@ -18,9 +20,9 @@ class CreateChatUseCase:
         users_ids = {user.id for user in users}
         for participant_id in participant_ids:
             if participant_id not in users_ids:
-                raise UserNotFoundException(
-                    f"Пользователь с id {participant_id} не существует"
-                )
+                err_msg = f"Пользователь с id {participant_id} не существует"
+                self._logger.exception(err_msg)
+                raise UserNotFoundException(err_msg)
 
     async def execute(
         self, name: str, category: ChatCategory, participant_ids: list[int]

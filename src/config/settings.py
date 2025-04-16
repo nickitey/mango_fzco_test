@@ -1,8 +1,20 @@
+from enum import Enum
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class AppConfig(BaseModel): ...
+class LogfileTTLMeasure(Enum):
+    SECONDS = "S"
+    MINUTES = "M"
+    HOURS = "H"
+    DAYS = "D"
+
+
+class AppConfig(BaseModel):
+    LOGFILE_PATH: str
+    LOGGING_LEVEL: str
+    LOGFILE_TTL_MEASURE: LogfileTTLMeasure
+    LOGFILE_TTL: int
 
 
 class DatabaseSettings(BaseModel):
@@ -37,3 +49,4 @@ class Settings(BaseSettings):
 
     database: DatabaseSettings
     redis: RedisSettings
+    app: AppConfig

@@ -1,6 +1,7 @@
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.config import LoggerConfigurator
 from src.domain.entities import ChatCategory
 from src.domain.exceptions import ChatNotFoundException, UserNotFoundException
 from src.infrastructure.database.models import (ChatModel, GroupModel,
@@ -10,6 +11,7 @@ from src.infrastructure.database.models import (ChatModel, GroupModel,
 class CreateGroupUseCase:
     def __init__(self, session: AsyncSession):
         self.session = session
+        self._logger = LoggerConfigurator().get_logger(utc=True)
 
     async def _validate_users(
         self, participant_ids: list[int], creator_id: int
@@ -27,13 +29,13 @@ class CreateGroupUseCase:
             if participant_id == creator_id:
                 creator_found = True
             if participant_id not in users_ids:
-                raise UserNotFoundException(
-                    f"Пользователь с id {participant_id} не существует"
-                )
+                err_msg = f"Пользователь с id {participant_id} не существует"
+                self._logger.exception(err_msg)
+                raise UserNotFoundException(err_msg)
         if not creator_found:
-            raise UserNotFoundException(
-                f"Пользователь с id {creator_id} не существует"
-            )
+            err_msg = f"Пользователь с id {creator_id} не существует"
+            self._logger.exception(err_msg)
+            raise UserNotFoundException(err_msg)
 
     async def _validate_chat(self, chat_id: int):
         query = select(ChatModel).where(ChatModel.id == chat_id)
@@ -41,12 +43,14 @@ class CreateGroupUseCase:
             result = await session.execute(query)
         chat = result.scalars().first()
         if not chat:
-            raise ChatNotFoundException(f"Чат с id {chat_id} не существует")
+            err_msg = f"Чат с id {chat_id} не существует"
+            self._logger.exception(err_msg)
+            raise ChatNotFoundException(err_msg)
         if chat.category == ChatCategory.PRIVATE:
-            raise ChatNotFoundException(
-                f"Публичный чат с id {chat_id} не существует. Создать группу"
-                f"на основе приватного чата нельзя."
-            )
+            err_msg = (f"Публичный чат с id {chat_id} не существует. Создать "
+                      "группу на основе приватного чата нельзя.")
+            self._logger.exception(err_msg)
+            raise ChatNotFoundException(err_msg)
 
     async def execute(
         self,

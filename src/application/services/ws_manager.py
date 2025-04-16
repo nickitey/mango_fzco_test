@@ -1,5 +1,6 @@
 from fastapi import WebSocket
 
+from src.config import LoggerConfigurator
 from src.domain.entities import ChatCategory, Message
 from src.domain.exceptions import (GroupNotFoundException,
                                    MessageNotFoundException)
@@ -17,6 +18,7 @@ class WebSocketManager:
     def __init__(self):
         self.connections: dict[int, WebSocket] = {}
         self.read_confirmations: dict[str, set[int]] = {}
+        self._logger = LoggerConfigurator().get_logger(utc=True)
 
     async def connect(
         self, user_id: int, websocket: WebSocket, group_repo: GroupRepository
@@ -44,7 +46,9 @@ class WebSocketManager:
     async def broadcast(self, message: Message, chat_id: int):
         group = await self.group_repo.get_by_chat_id(chat_id)
         if not group:
-            raise GroupNotFoundException(f"Группа с {chat_id} не существует.")
+            err_msg = f"Группа с {chat_id} не существует."
+            self._logger.exception(err_msg)
+            raise GroupNotFoundException(err_msg)
 
         for user in group.participants:
             if user.id in self.connections and user.id != message.sender_id:
@@ -100,15 +104,15 @@ class WebSocketManager:
 
         message = await message_repo.get_by_id(message_id)
         if not message:
-            raise MessageNotFoundException(
-                f"Сообщение {message_id} не найдено"
-            )
+            err_msg = f"Сообщение {message_id} не найдено"
+            self._logger.exception(err_msg)
+            raise MessageNotFoundException(err_msg)
 
         group = await group_repo.get_by_chat_id(message.chat_id)
         if not group:
-            raise GroupNotFoundException(
-                f"Группа для chat_id={message.chat_id} не найдена"
-            )
+            err_msg = f"Группа для chat_id={message.chat_id} не найдена"
+            self._logger.exception(err_msg)
+            raise GroupNotFoundException(err_msg)
 
         # Проверяем, все ли участники (кроме отправителя) прочитали
         participants_except_sender = set((user.id for user in group.participants)) - {
