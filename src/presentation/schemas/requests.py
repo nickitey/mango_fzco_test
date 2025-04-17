@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, model_validator
 
 from src.domain.entities import ChatCategory
 from src.domain.exceptions import TooMuchUsersForPrivateChatException
@@ -15,9 +15,8 @@ class ChatCreate(BaseModel):
     category: ChatCategory
     participant_ids: list[int]
 
-    @field_validator("participant_ids")
-    @classmethod
-    def validate_participant_ids(cls, ids):
+    @model_validator(mode="after")
+    def validate_participant_ids(self):
         """
         В приватном чате не может состоять больше двух пользователей.
         Эту валидацию можно реализовать на нескольких уровнях, наиболее
@@ -41,12 +40,12 @@ class ChatCreate(BaseModel):
         а вдруг человек хочет хоть где-то побыть один? И не стал реализовывать
         такую проверку.
         """
-        if cls.category == ChatCategory.PRIVATE:
-            if len(ids) > 2:
+        if self.category == ChatCategory.PRIVATE:
+            if len(self.participant_ids) > 2:
                 raise TooMuchUsersForPrivateChatException(
                     "В приватном чате может быть не более двух пользователей"
                 )
-        return ids
+        return self
 
 
 class GroupCreate(BaseModel):
