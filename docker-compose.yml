@@ -49,7 +49,8 @@ services:
     networks:
       - shared-network
     volumes:
-      - ./${APP__LOGFILE_PATH}:/app/${APP__LOGFILE_PATH}
+      - ./logs/:/app/logs/
+      - ./${APP__MIGRATIONS_FILEPATH}:/app/src/infrastructure/database/migrations/versions
 
 volumes:
   chat-postgres-data:

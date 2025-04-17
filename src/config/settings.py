@@ -11,7 +11,6 @@ class LogfileTTLMeasure(Enum):
 
 
 class AppConfig(BaseModel):
-    LOGFILE_PATH: str
     LOGGING_LEVEL: str
     LOGFILE_TTL_MEASURE: LogfileTTLMeasure
     LOGFILE_TTL: int

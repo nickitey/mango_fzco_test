@@ -13,7 +13,8 @@ WORKDIR /app
 COPY pyproject.toml poetry.lock requirements.txt ./
 
 RUN rm -rf /var/cache/apt && rm -rf /var/lib/apt/lists/* \
-    && apt-get update && apt-get install --no-install-recommends -y libpq-dev=15.12-0+deb12u2 \
+    && apt-get update && apt-get install --no-install-recommends -y \
+    gosu libpq-dev=15.12-0+deb12u2 \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir --upgrade pip==25.0.1 \
     && pip install --no-cache-dir -r requirements.txt \
@@ -30,7 +31,5 @@ COPY . .
 RUN chown -R $USER_NAME:$USER_GROUP /app \
     && mv ./scripts/launch.sh /docker-entrypoint.sh \
     && chmod +x /docker-entrypoint.sh
-
-USER $USER_NAME
 
 ENTRYPOINT [ "/docker-entrypoint.sh" ]

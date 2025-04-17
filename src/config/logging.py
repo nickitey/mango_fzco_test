@@ -37,7 +37,7 @@ class LoggerConfigurator:
                 },
                 "logfile": {
                     "()": logging.handlers.TimedRotatingFileHandler,
-                    "filename": settings.app.LOGFILE_PATH,
+                    "filename": f"./logs/log_file.log",
                     "level": self._level,
                     "formatter": "default",
                     "when": settings.app.LOGFILE_TTL_MEASURE.value,
