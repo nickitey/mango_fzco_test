@@ -6,11 +6,9 @@ from fastapi import FastAPI
 
 from src.config import LoggerConfigurator, Settings
 from src.di import create_container
-from src.presentation.api import hist_router, crud_router
+from src.presentation.api import crud_router, hist_router
 from src.presentation.websockets import router as ws_router
 
-
-settings = Settings()
 logger = LoggerConfigurator().get_logger(utc=True)
 
 
@@ -24,7 +22,7 @@ app = FastAPI(
     title="Тестовое приложение для WinDI Tech",
     description="Приложение, реализующее чат на вебсокетах с историей сообщений",
     lifespan=lifespan,
-    logger=logger
+    logger=logger,
 )
 
 container = create_container()

@@ -18,7 +18,7 @@ class SendMessageUseCase:
         chat_repo: ChatRepository,
         user_repo: UserRepository,
         ws_manager: WebSocketManager,
-        redis_client: redis.Redis
+        redis_client: redis.Redis,
     ):
         self.message_repo = message_repo
         self.chat_repo = chat_repo
@@ -59,7 +59,6 @@ class SendMessageUseCase:
         receiver_id = next(u.id for u in participants if u.id != sender_id)
 
         message = Message(
-            id=message_id,
             chat_id=chat_id,
             sender_id=sender_id,
             text=text,
@@ -83,7 +82,6 @@ class SendMessageUseCase:
             raise DuplicateMessageException(err_msg)
 
         message = Message(
-            id=message_id,
             chat_id=chat_id,
             sender_id=sender_id,
             text=text,

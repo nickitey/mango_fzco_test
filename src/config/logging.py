@@ -5,7 +5,6 @@ from time import gmtime
 
 from .settings import Settings
 
-
 settings = Settings()
 
 
@@ -72,7 +71,8 @@ class LoggerConfigurator:
     @staticmethod
     def _make_utc_logger(logger: logging.Logger) -> logging.Logger:
         for handler in logger.handlers:
-            handler.formatter.converter = gmtime
+            if handler.formatter is not None:
+                handler.formatter.converter = gmtime
         return logger
 
     def get_logger(
@@ -84,7 +84,5 @@ class LoggerConfigurator:
         """
         current_logger: logging.Logger = logging.getLogger(name)
         if utc:
-            current_logger: logging.Logger = self._make_utc_logger(
-                current_logger
-            )
+            return self._make_utc_logger(current_logger)
         return current_logger

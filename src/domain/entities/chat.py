@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 
@@ -9,6 +9,7 @@ class ChatCategory(Enum):
 
 @dataclass
 class Chat:
-    id: int
     name: str
     category: ChatCategory
+    participants: list[int]
+    id: int | None = field(default=None)

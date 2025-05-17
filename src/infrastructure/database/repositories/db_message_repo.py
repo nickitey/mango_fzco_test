@@ -15,6 +15,8 @@ class DatabaseMessageRepository(MessageRepository):
         async with self.session as session:
             session.add(db_message)
             await session.commit()
+            await session.refresh(db_message)
+        message.id = str(db_message.id)
         return message
 
     async def get_by_id(self, message_id: str) -> Message | None:
@@ -41,12 +43,18 @@ class DatabaseMessageRepository(MessageRepository):
         async with self.session as session:
             result = await session.execute(query)
         messages = result.scalars().all()
-        return [Message(**{
-            key: value for key, value in vars(m).items()
-            if key != "_sa_instance_state"
-        }) for m in messages]
+        return [
+            Message(
+                **{
+                    key: value
+                    for key, value in vars(m).items()
+                    if key != "_sa_instance_state"
+                }
+            )
+            for m in messages
+        ]
 
-    async def mark_as_read(self, message_id: int) -> None:
+    async def mark_as_read(self, message_id: str) -> None:
         query = select(MessageModel).where(MessageModel.id == message_id)
         async with self.session as session:
             result = await session.execute(query)

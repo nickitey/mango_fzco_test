@@ -20,6 +20,8 @@ router = APIRouter(prefix="/create")
 async def create_user(
     data: UserCreate, use_case: FromDishka[CreateUserUseCase] = None
 ):
+    """Обработчик запросов на создание пользователя"""
+
     """
     Валидация уникальности пользователя по имени и email.
     В SQLAlchemy при нарушении ограничения возбуждается исключение IntegrityError.
@@ -34,6 +36,7 @@ async def create_user(
     try:
         user = await use_case.execute(data.name, data.email, data.password)
     except IntegrityError as e:
+        str_e = str(e)
         if isinstance(e.orig, UniqueViolation):
             err_msg = (
                 "Пользователь с такими именем или адресом почты уже"
@@ -45,9 +48,9 @@ async def create_user(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             )
         err_msg = "Возникла ошибка при создании пользователя: "
-        logger.exception(err_msg + e)
+        logger.exception(err_msg + str_e)
         raise HTTPException(
-            detail=str(e), status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+            detail=str_e, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
         ) from e
 
     return JSONResponse(
@@ -57,13 +60,23 @@ async def create_user(
 
 @router.post("/chat")
 @inject
-async def create_chat(data: ChatCreate, use_case: FromDishka[CreateChatUseCase] = None):
-    chat = await use_case.execute(data.name, data.category, data.participant_ids)
-    return JSONResponse({"id": chat.id, "name": chat.name, "category": chat.category.value})
+async def create_chat(
+    data: ChatCreate, use_case: FromDishka[CreateChatUseCase] = None
+):
+    chat = await use_case.execute(
+        data.name, data.category, data.participant_ids
+    )
+    return JSONResponse(
+        {"id": chat.id, "name": chat.name, "category": chat.category.value}
+    )
 
 
 @router.post("/group")
 @inject
-async def create_group(data: GroupCreate, use_case: FromDishka[CreateGroupUseCase] = None):
-    group = await use_case.execute(data.name, data.chat_id, data.creator_id, data.participant_ids)
+async def create_group(
+    data: GroupCreate, use_case: FromDishka[CreateGroupUseCase] = None
+):
+    group = await use_case.execute(
+        data.name, data.chat_id, data.creator_id, data.participant_ids
+    )
     return JSONResponse({"id": group.id, "name": group.name})

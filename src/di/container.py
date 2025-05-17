@@ -89,18 +89,18 @@ class AppProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_create_user_usecase(
-        self, session_maker: async_sessionmaker[AsyncSession]
+        self, user_repo: UserRepository
     ) -> CreateUserUseCase:
-        return CreateUserUseCase(session_maker())
+        return CreateUserUseCase(user_repo)
 
     @provide(scope=Scope.REQUEST)
     def get_create_chat_usecase(
-        self, session_maker: async_sessionmaker[AsyncSession]
+        self, chat_repo: ChatRepository
     ) -> CreateChatUseCase:
-        return CreateChatUseCase(session_maker())
+        return CreateChatUseCase(chat_repo)
 
     @provide(scope=Scope.REQUEST)
     def get_create_group_usecase(
-        self, session_maker: async_sessionmaker[AsyncSession]
+        self, group_repo: GroupRepository
     ) -> CreateGroupUseCase:
-        return CreateGroupUseCase(session_maker())
+        return CreateGroupUseCase(group_repo)

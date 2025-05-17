@@ -11,14 +11,16 @@ class DatabaseUserRepository(UserRepository):
         self.session = session
 
     async def create(self, user: User) -> User:
-        db_user = User(**vars(user))
+        db_user = UserModel(**vars(user))
         async with self.session as session:
             session.add(db_user)
             await session.commit()
+            await session.refresh(db_user)
+        user.id = db_user.id
         return user
 
-    async def get_by_id(self, user_id: int) -> User | None:
-        query = select(UserModel).where(UserModel.id == user_id)
+    async def get_by_username(self, username: str) -> User | None:
+        query = select(UserModel).where(UserModel.name == username)
         async with self.session as session:
             result = await session.execute(query)
         db_user = result.scalar_one_or_none()

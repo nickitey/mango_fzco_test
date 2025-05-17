@@ -70,6 +70,18 @@ async def websocket_endpoint(
 
     logger = LoggerConfigurator().get_logger(utc=True)
     try:
+        # Проверим, является ли данный пользователь участником этого чата
+        if not await chat_repo.check_chat_participant(chat_id, user_id):
+            logger.info(
+                f"К чату #{chat_id} пытался подключиться пользователь #{user_id}, "
+                "который не является участником этого чата. "
+                "В установлении соединения отказано."
+            )
+            await websocket.close(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Пользователь не является участником данного чата.",
+            )
+            return  # Прерываем выполнение
         await ws_manager.connect(user_id, websocket, group_repo)
         while True:
             data = await websocket.receive_json()

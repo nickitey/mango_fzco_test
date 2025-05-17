@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from typing import NoReturn
 
-from src.domain.entities import Chat
+from src.domain.entities import Chat, User
 
 
 class ChatRepository(ABC):
@@ -19,5 +20,15 @@ class ChatRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_chat_participants(self, chat_id: int):
+    async def validate_users(
+        self, participant_ids: list[int]
+    ) -> None | NoReturn:
+        pass
+
+    @abstractmethod
+    async def get_chat_participants(self, chat_id: int) -> list[User | None]:
+        pass
+
+    @abstractmethod
+    async def check_chat_participant(self, chat_id: int, user_id: int) -> bool:
         pass

@@ -1,9 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
 class User:
-    id: int
     name: str
     email: str
     password_hash: str
+    id: int | None = field(default=None)

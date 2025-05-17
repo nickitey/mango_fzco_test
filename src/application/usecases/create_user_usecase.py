@@ -1,18 +1,13 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.config import hash_password
-from src.infrastructure.database.models import UserModel
+from src.domain.entities import User
+from src.domain.repositories import UserRepository
 
 
 class CreateUserUseCase:
-    def __init__(self, session: AsyncSession):
-        self.session = session
+    def __init__(self, user_repo: UserRepository):
+        self.user_repo = user_repo
 
-    async def execute(self, name: str, email: str, password: str) -> UserModel:
+    async def execute(self, name: str, email: str, password: str) -> User:
         password_hash = hash_password(password)
-        user = UserModel(name=name, email=email, password_hash=password_hash)
-        async with self.session as session:
-            session.add(user)
-            await session.commit()
-            await session.refresh(user)
-        return user
+        user = User(name=name, email=email, password_hash=password_hash)
+        return await self.user_repo.create(user)

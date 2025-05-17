@@ -19,6 +19,7 @@ class WebSocketManager:
         self.connections: dict[int, WebSocket] = {}
         self.read_confirmations: dict[str, set[int]] = {}
         self._logger = LoggerConfigurator().get_logger(utc=True)
+        self.group_repo: GroupRepository | None = None
 
     async def connect(
         self, user_id: int, websocket: WebSocket, group_repo: GroupRepository
@@ -117,9 +118,9 @@ class WebSocketManager:
             raise GroupNotFoundException(err_msg)
 
         # Проверяем, все ли участники (кроме отправителя) прочитали
-        participants_except_sender = set((user.id for user in group.participants)) - {
-            message.sender_id
-        }
+        participants_except_sender = set(
+            (user.id for user in group.participants)
+        ) - {message.sender_id}
         read_by = self.read_confirmations.get(message_id)
         if read_by is None:
             """
@@ -128,7 +129,7 @@ class WebSocketManager:
             уведомления.
             Логика в сокете универсальна: пришло подтверждение - вызови этот
             метод. Но что, если один клиент прислал отчет, запустил выполнение
-            подтверждения о прочтении, и код дошел до 
+            подтверждения о прочтении, и код дошел до
             del self.read_confirmations[message_id],
             то есть все, нет в self.read_confirmations больше такого ключа -
             uuid сообщения, но в это же время другой клиент тоже прислал отчет
