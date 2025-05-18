@@ -30,7 +30,3 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 79
-
-[tool.mypy]
-mypy_path = "src"
-packages = ["src"]
