@@ -1,5 +1,5 @@
 from dishka.integrations.fastapi import FromDishka, inject
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from psycopg.errors import UniqueViolation
 from sqlalchemy.exc import IntegrityError
@@ -8,8 +8,9 @@ from src.application.usecases import (CreateChatUseCase, CreateGroupUseCase,
                                       CreateUserUseCase)
 from src.config.logging import LoggerConfigurator
 from src.domain.exceptions import UserNotUniqueException
-from src.presentation.schemas.requests import (ChatCreate, GroupCreate,
-                                               UserCreate)
+from src.presentation.schemas.entities_requests import (ChatCreate,
+                                                        GroupCreate,
+                                                        UserCreate)
 
 logger = LoggerConfigurator().get_logger(utc=True)
 router = APIRouter(prefix="/create")

@@ -3,16 +3,18 @@ from dishka import Provider, Scope, provide
 from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
                                     create_async_engine)
 
-from src.application.services.ws_manager import WebSocketManager
+from src.application.services import AuthService, WebSocketManager
 from src.application.usecases import (CreateChatUseCase, CreateGroupUseCase,
                                       CreateUserUseCase, GetChatHistoryUseCase,
                                       SendMessageUseCase)
 from src.config import Settings
 from src.domain.repositories import (ChatRepository, GroupRepository,
                                      MessageRepository, UserRepository)
+from src.domain.services import AbstractJWTService
 from src.infrastructure.database.repositories import (
     DatabaseChatRepository, DatabaseGroupRepository, DatabaseMessageRepository,
     DatabaseUserRepository)
+from src.infrastructure.security import JWTService
 
 
 class AppProvider(Provider):
@@ -104,3 +106,13 @@ class AppProvider(Provider):
         self, group_repo: GroupRepository
     ) -> CreateGroupUseCase:
         return CreateGroupUseCase(group_repo)
+
+    @provide(scope=Scope.SESSION)
+    def get_jwt_service(self, settings: Settings) -> JWTService:
+        return JWTService(settings)
+
+    @provide(scope=Scope.SESSION)
+    def get_auth_service(
+        self, user_repo: UserRepository, jwt_service: JWTService
+    ) -> AuthService:
+        return AuthService(user_repo, jwt_service)

@@ -1,21 +1,24 @@
 from uuid import uuid4
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
+from fastapi.params import Query
+from jwt import DecodeError, ExpiredSignatureError, InvalidTokenError
 
 from src.application.services import WebSocketManager
 from src.application.usecases import SendMessageUseCase
 from src.config import LoggerConfigurator
 from src.domain.repositories import (ChatRepository, GroupRepository,
                                      MessageRepository)
+from src.infrastructure.security import JWTService
 
 router = APIRouter()
 
 
-@router.websocket("/ws/{chat_id}/{user_id}")
+@router.websocket("/ws/{chat_id}")
 async def websocket_endpoint(
     websocket: WebSocket,
     chat_id: int,
-    user_id: int,
+    token: str,
 ):
     """
     Заметки для себя: Dishka отвратительно работает с вебсокетами. Работе с ними
@@ -67,21 +70,40 @@ async def websocket_endpoint(
         group_repo = await request_container.get(GroupRepository)
         message_repo = await request_container.get(MessageRepository)
         chat_repo = await request_container.get(ChatRepository)
+        jwt_service = await request_container.get(JWTService)
 
     logger = LoggerConfigurator().get_logger(utc=True)
+    # Проверка JWT-токена.
+    # О том, почему токен передается в параметрах запроса,
+    # есть хорошая статья: https://habr.com/ru/articles/790272
     try:
-        # Проверим, является ли данный пользователь участником этого чата
-        if not await chat_repo.check_chat_participant(chat_id, user_id):
-            logger.info(
-                f"К чату #{chat_id} пытался подключиться пользователь #{user_id}, "
-                "который не является участником этого чата. "
-                "В установлении соединения отказано."
-            )
-            await websocket.close(
-                code=status.WS_1008_POLICY_VIOLATION,
-                reason="Пользователь не является участником данного чата.",
-            )
-            return  # Прерываем выполнение
+        payload = jwt_service.verify_token(token)
+        user_id = int(payload["sub"])
+    except (ValueError, ExpiredSignatureError, DecodeError, InvalidTokenError):
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason="Ошибка валидации токена.",
+        )
+        logger.info(
+            f"В чат #{chat_id} была попытка входа пользователя без "
+            "действующего JWT."
+        )
+        return
+
+    # Проверим, является ли данный пользователь участником этого чата
+    if not await chat_repo.check_chat_participant(chat_id, user_id):
+        logger.info(
+            f"К чату #{chat_id} пытался подключиться пользователь #{user_id}, "
+            "который не является участником этого чата. "
+            "В установлении соединения отказано."
+        )
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason="Пользователь не является участником данного чата.",
+        )
+        return
+
+    try:
         await ws_manager.connect(user_id, websocket, group_repo)
         while True:
             data = await websocket.receive_json()
