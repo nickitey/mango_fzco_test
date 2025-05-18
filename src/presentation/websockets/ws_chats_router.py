@@ -141,4 +141,4 @@ async def websocket_endpoint(
             f"с ошибкой {e}"
         )
     finally:
-        await ws_manager.disconnect(user_id)
+        await ws_manager.disconnect(user_id, websocket)

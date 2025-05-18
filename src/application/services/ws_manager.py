@@ -3,7 +3,7 @@ from fastapi import WebSocket
 from src.config import LoggerConfigurator
 from src.domain.entities import ChatCategory, Message
 from src.domain.exceptions import (GroupNotFoundException,
-                                   MessageNotFoundException)
+                                   MessageNotFoundException, UserNotFoundException)
 from src.domain.repositories import (ChatRepository, GroupRepository,
                                      MessageRepository)
 
@@ -16,7 +16,7 @@ class WebSocketManager:
     """
 
     def __init__(self):
-        self.connections: dict[int, WebSocket] = {}
+        self.connections: dict[int, set[WebSocket]] = {}
         self.read_confirmations: dict[str, set[int]] = {}
         self._logger = LoggerConfigurator().get_logger(utc=True)
         self.group_repo: GroupRepository | None = None
@@ -24,27 +24,39 @@ class WebSocketManager:
     async def connect(
         self, user_id: int, websocket: WebSocket, group_repo: GroupRepository
     ):
-        await websocket.accept()
         self.group_repo = group_repo
-        self.connections[user_id] = websocket
+        await websocket.accept()
+        if user_id not in self.connections:
+            self.connections[user_id] = set()
+        self.connections[user_id].add(websocket)
         self._logger.info(f"Пользователь {user_id} подключился")
 
-    async def disconnect(self, user_id: int):
-        self.connections.pop(user_id, None)
+    async def disconnect(self, user_id: int, websocket: WebSocket):
+        user_sockets = self.connections.get(user_id)
+        if not user_sockets:
+            err_msg = (f"Попытка закрыть соединения пользователя {user_id} "
+                       "завершилась неудачно. С пользователем нет активных "
+                       "ассоциированных вебсокетов.")
+            self._logger.exception(err_msg)
+            raise UserNotFoundException(err_msg)
+        user_sockets.discard(websocket)
+        if not user_sockets:
+            del self.connections[user_id]
         self._logger.info(f"Пользователь {user_id} отключился")
 
     async def send_private_message(self, message: Message, receiver_id: int):
         if receiver_id in self.connections:
-            await self.connections[receiver_id].send_json(
-                {
-                    "id": message.id,
-                    "chat_id": message.chat_id,
-                    "sender_id": message.sender_id,
-                    "text": message.text,
-                    "timestamp": message.timestamp.isoformat(),
-                    "is_read": message.is_read,
-                }
-            )
+            for websocket in self.connections[receiver_id]:
+                await websocket.send_json(
+                    {
+                        "id": message.id,
+                        "chat_id": message.chat_id,
+                        "sender_id": message.sender_id,
+                        "text": message.text,
+                        "timestamp": message.timestamp.isoformat(),
+                        "is_read": message.is_read,
+                    }
+                )
 
     async def broadcast(self, message: Message, chat_id: int):
         group = await self.group_repo.get_by_chat_id(chat_id)
@@ -55,16 +67,17 @@ class WebSocketManager:
 
         for user in group.participants:
             if user.id in self.connections and user.id != message.sender_id:
-                await self.connections[user.id].send_json(
-                    {
-                        "id": message.id,
-                        "chat_id": message.chat_id,
-                        "sender_id": message.sender_id,
-                        "text": message.text,
-                        "timestamp": message.timestamp.isoformat(),
-                        "is_read": message.is_read,
-                    }
-                )
+                for websocket in self.connections[user.id]:
+                    await websocket.send_json(
+                        {
+                            "id": message.id,
+                            "chat_id": message.chat_id,
+                            "sender_id": message.sender_id,
+                            "text": message.text,
+                            "timestamp": message.timestamp.isoformat(),
+                            "is_read": message.is_read,
+                        }
+                    )
 
     async def confirm_read(
         self,
@@ -101,19 +114,19 @@ class WebSocketManager:
     ):
         if message_id not in self.read_confirmations:
             # Для каждого сообщения создаем временное множество прочитавших
-            # его адресатов
+            # его адресатов (по user_id, независимо от количества сокетов)
             self.read_confirmations[message_id] = set()
         self.read_confirmations[message_id].add(user_id)
 
         message = await message_repo.get_by_id(message_id)
         if not message:
-            err_msg = f"Сообщение {message_id} не найдено"
+            err_msg = f"Сообщение #{message_id} не найдено"
             self._logger.exception(err_msg)
             raise MessageNotFoundException(err_msg)
 
         group = await group_repo.get_by_chat_id(message.chat_id)
         if not group:
-            err_msg = f"Группа для chat_id={message.chat_id} не найдена"
+            err_msg = f"Группа для чата с id #{message.chat_id} не найдена"
             self._logger.exception(err_msg)
             raise GroupNotFoundException(err_msg)
 
