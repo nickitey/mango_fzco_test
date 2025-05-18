@@ -1,0 +1,60 @@
+services:
+  postgres:
+    image: postgres:16.1-alpine
+    container_name: chat-postgres
+    env_file:
+      - .env
+    ports:
+      - "${DATABASE__POSTGRES_EXT_PORT}:${DATABASE__POSTGRES_PORT}"
+    environment:
+      - POSTGRES_DB=${DATABASE__POSTGRES_DB}
+      - POSTGRES_USER=${DATABASE__POSTGRES_USER}
+      - POSTGRES_PASSWORD=${DATABASE__POSTGRES_PASSWORD}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DATABASE__POSTGRES_USER} && psql -U ${DATABASE__POSTGRES_USER} -d ${DATABASE__POSTGRES_DB} -c 'SELECT 1'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - chat-postgres-data:/var/lib/postgresql/data
+    networks:
+      - shared-network
+
+  redis:
+    image: redis/redis-stack:7.4.0-v0
+    container_name: chat-redis
+    ports:
+      - "${REDIS__REDIS_EXT_PORT}:${REDIS__REDIS_PORT}"
+    environment:
+      REDIS_PASSWORD: ${REDIS__REDIS_PASSWORD}
+    command: [ "redis-server", "--requirepass", "${REDIS__REDIS_PASSWORD}" ]
+    networks:
+      - shared-network
+
+  wschat:
+    container_name: wschat
+    build:
+      context: .
+      dockerfile: ./.deploy/docker/Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    networks:
+      - shared-network
+    volumes:
+      - ./logs/:/app/logs/
+      - ./${APP__MIGRATIONS_FILEPATH}:/app/src/infrastructure/database/migrations/versions
+
+volumes:
+  chat-postgres-data:
+
+networks:
+  shared-network:
+    external: true
