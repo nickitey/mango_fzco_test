@@ -1,5 +1,8 @@
 #!/bin/sh
 
+openssl rand -hex 32 > /app/hs256_secret.key
+export AUTH__SECRET_KEY=$(cat /app/hs256_secret.key)
+
 chown -R wschat-user:wschat-group /app/$APP__MIGRATIONS_FILEPATH
 chown -R wschat-user:wschat-group /app/logs
 
